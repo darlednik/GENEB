@@ -1,0 +1,11 @@
+tensorflow
+tensorflow-hub==0.11.0
+kipoiseq
+pyfaidx
+pandas
+numpy
+scikit-learn
+scipy
+datasets
+tqdm
+ipykernel
