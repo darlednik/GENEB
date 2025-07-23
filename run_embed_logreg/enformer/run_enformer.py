@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import logging
 from pathlib import Path
@@ -14,9 +13,7 @@ import tensorflow_hub as hub
 import kipoiseq
 from kipoiseq import transforms
 
-# --------------------------------------------------
-# Ваш класс EnformerEmbeddingExtractor без изменений
-# --------------------------------------------------
+
 class EnformerEmbeddingExtractor:
     def __init__(self, 
                  model_path: str = 'https://tfhub.dev/deepmind/enformer/1',
