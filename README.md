@@ -35,19 +35,19 @@ python run_enformer.py \
 
 ## Run script **run_embed_logreg/nucleotide_transformer/run_nt.py**:
 
-### Установка
+### Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Запуск
+### Run
 
 ```bash
 python run_nt.py [options]
 ```
 
-### Параметры
+### Options
 
 - `-b, --batch_size` — batch size (default: 32)  
 - `-d, --device` — device (`cpu` or `cuda`, autodetect)  
@@ -55,7 +55,7 @@ python run_nt.py [options]
 - `-l, --log` — enable logging (INFO)  
 - `--models` — list models (default 4 InstaDeepAI)  
 
-### Пример
+### Example
 
 ```bash
 python run_nt.py \
