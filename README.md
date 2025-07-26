@@ -10,7 +10,7 @@ DNA Survey Research
 pip install -r requirements.txt
 ```
 
-## Run
+### Run
 
 ```bash
 python run_enformer.py [options]
@@ -23,12 +23,44 @@ python run_enformer.py [options]
 - `-o, --output_dir` – path to save outputs (default: .)  
 - `--log` – enable logging (INFO)
 
-## Example
+### Example
 
 ```bash
 python run_enformer.py \
   --batch_size 10 \
   --device cuda \
   --output_dir ./results \
+  --log
+```
+
+## Run script **run_embed_logreg/nucleotide_transformer/run_nt.py**:
+
+### Установка
+
+```bash
+pip install -r requirements.txt
+```
+
+### Запуск
+
+```bash
+python run_nt.py [options]
+```
+
+### Параметры
+
+- `-b, --batch_size` — batch size (default: 32)  
+- `-d, --device` — device (`cpu` or `cuda`, autodetect)  
+- `-o, --output_dir` — path to save outputs (default: `.`)  
+- `-l, --log` — enable logging (INFO)  
+- `--models` — list models (default 4 InstaDeepAI)  
+
+### Пример
+
+```bash
+python run_nt.py \
+  --batch_size 32 \
+  --device cuda \
+  --output_dir results \
   --log
 ```
