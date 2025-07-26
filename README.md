@@ -4,16 +4,16 @@ DNA Survey Research
 
 ## Run script **run_embed_logreg/enformer/run_enformer.py**:
 
-### Installation
+### Synchronize dependences and create enviroment
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ### Run
 
 ```bash
-python run_enformer.py [options]
+uv run pipeline
 ```
 
 ### Options
@@ -26,41 +26,5 @@ python run_enformer.py [options]
 ### Example
 
 ```bash
-python run_enformer.py \
-  --batch_size 10 \
-  --device cuda \
-  --output_dir ./results \
-  --log
-```
-
-## Run script **run_embed_logreg/nucleotide_transformer/run_nt.py**:
-
-### Установка
-
-```bash
-pip install -r requirements.txt
-```
-
-### Запуск
-
-```bash
-python run_nt.py [options]
-```
-
-### Параметры
-
-- `-b, --batch_size` — batch size (default: 32)  
-- `-d, --device` — device (`cpu` or `cuda`, autodetect)  
-- `-o, --output_dir` — path to save outputs (default: `.`)  
-- `-l, --log` — enable logging (INFO)  
-- `--models` — list models (default 4 InstaDeepAI)  
-
-### Пример
-
-```bash
-python run_nt.py \
-  --batch_size 32 \
-  --device cuda \
-  --output_dir results \
-  --log
+uv sync && uv run pipeline --batch_size=16 --device=cuda --output_dir=. --log
 ```
