@@ -83,7 +83,7 @@ class EnformerPyTorchExtractor:
                 out = self.model(tensor)
                 human = out['human']  # shape (b,896,5313)
                 # mean pool spatial dims and channels -> (b,)
-                emb = human.mean(dim=(1, 2)).cpu().numpy()
+                emb = human.mean(dim=1).cpu().numpy()
                 embs.append(emb)
         return np.concatenate(embs, axis=0)
 
