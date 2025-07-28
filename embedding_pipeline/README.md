@@ -1,13 +1,3 @@
-Here's a clear and professional `README.md` template for your repository, based on your current usage and structure:
-
----
-
-## Embedding Evaluation Benchmark
-
-This repository provides a unified pipeline for extracting embeddings from biological sequences using various models (e.g., Enformer) and evaluating them via logistic regression, including few-shot performance.
-
----
-
 ## Directory Structure
 
 ```
