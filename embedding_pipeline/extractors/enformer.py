@@ -6,8 +6,8 @@ import numpy as np
 import torch
 
 class EnformerPyTorchExtractor:
-    def __init__(self, name_model: str, device='cpu'):
-        self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
+    def __init__(self, name_model: str, device: str='cpu'):
+        self.device = device or torch.device(device if torch.cuda.is_available() else 'cpu')
   
         self.model = from_pretrained(
             name_model, 
@@ -51,19 +51,19 @@ class EnformerPyTorchExtractor:
                 arr[i, mapping[c]] = 1.0
         return torch.tensor(arr)
 
-    def extract_embeddings(self, sequences: List[str], batch_size=1):
+    def extract_embeddings(self, sequences: List[str], batch_size=1) -> np.ndarray:
         """
         Compute mean-pooled embeddings for a list of genomic sequences.
 
         Each sequence is one-hot encoded, passed through the Enformer model,
         and the 'human' output track is averaged over spatial and channel dimensions.
 
-        Inputs:
+        Args:
             sequences: List of nucleotide sequences (strings).
             batch_size: Number of sequences to process at once (mem-efficient).
 
         Returns:
-            NumPy array of shape (len(sequences),) containing one embedding per sequence.
+            np.ndarray of shape (len(sequences), hidden_size)
         """
         all_embs = []
         with torch.no_grad():

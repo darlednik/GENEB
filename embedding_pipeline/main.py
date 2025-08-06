@@ -5,6 +5,7 @@ import importlib
 import pandas as pd
 from pathlib import Path
 from pipeline.classification import EmbeddingClassificationPipeline
+import torch
 
 
 def load_extractor_class(module_name: str, class_name: str):
@@ -29,7 +30,7 @@ def main(**kwargs):
     batch_size = kwargs.get("batch_size")
     name_model = kwargs.get("name_model")
 
-    import torch
+
     logging.info(f"Device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
 
     ExtractorClass = load_extractor_class(module_name, extractor_name)

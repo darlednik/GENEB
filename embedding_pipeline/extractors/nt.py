@@ -14,19 +14,17 @@ class NucleotideTransformerExtractor:
         self.model.to(self.device)
         self.max_length = self.tokenizer.model_max_length
 
-    def extract_embeddings(self,
-                           sequences: list[str],
-                           batch_size: int = 8) -> np.ndarray:
+    def extract_embeddings(self, sequences: list[str], batch_size: int = 1) -> np.ndarray:
         
         """
         Compute mean-pooled embeddings for a list of genomic sequences.
 
-        Inputs:
+        Args:
             sequences: List of nucleotide sequences (strings).
             batch_size: Number of sequences to process at once (mem-efficient).
 
         Returns:
-            NumPy array of shape (len(sequences),) containing one embedding per sequence.
+            np.ndarray of shape (len(sequences), hidden_size)
         """
 
         all_embs = []

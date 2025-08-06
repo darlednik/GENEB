@@ -8,13 +8,10 @@ __pycache__/
 .tools-env/
 .uv/
 
-# uv и pip кеши
-# (глобальный путём, но можно пропустить если не используете)
-# ~/.cache/uv/
-# ~/.cache/pip/
-
 # результаты и данные
 results/
 data_dir/*.csv 
 data_dir
 tools-env
+weights
+dna_gpt

@@ -11,12 +11,13 @@ dependencies = [
   "datasets>=2.9",
   "tqdm>=4.64",
   "enformer-pytorch>=0.5",
-  "transformers"
+  "transformers",
+  "torch>=2.0.0",
+  "ai2-olmo",
 ]
 
 [project.scripts]
 pipeline = "main:main"
-
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -25,3 +26,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages   = ["pipeline", "extractors", "data_dir"]
 py-modules = ["main"]
+
+#[tool.uv.scripts]
+#setup-dnagpt = "bash -c 'if [ ! -d lib/DNAGPT ]; then git clone https://github.com/TencentAILabHealthcare/DNAGPT.git lib/DNAGPT; else cd lib/DNAGPT && git pull; fi'"
