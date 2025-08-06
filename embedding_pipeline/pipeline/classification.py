@@ -31,7 +31,7 @@ class EmbeddingClassificationPipeline:
         full_metrics = defaultdict(list)
         
         for seed in seeds:
-            params = dict(self.logreg_base_params, random_state=seed)
+            params = dict(self.logreg_params, random_state=seed)
             clf = LogisticRegression(**params).fit(train_embeddings, train_labels)
 
             preds = clf.predict(test_embeddings)
@@ -61,7 +61,7 @@ class EmbeddingClassificationPipeline:
                     for locs in [np.where(train_labels == cls)[0]]
                 ])
 
-                params = dict(self.logreg_base_params, random_state=seed)
+                params = dict(self.logreg_params, random_state=seed)
 
                 clf = LogisticRegression(**self.logreg_params).fit(train_embeddings[idxs], train_labels[idxs])
                 preds = clf.predict(test_embeddings)

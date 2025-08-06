@@ -17,6 +17,18 @@ class NucleotideTransformerExtractor:
     def extract_embeddings(self,
                            sequences: list[str],
                            batch_size: int = 8) -> np.ndarray:
+        
+        """
+        Compute mean-pooled embeddings for a list of genomic sequences.
+
+        Inputs:
+            sequences: List of nucleotide sequences (strings).
+            batch_size: Number of sequences to process at once (mem-efficient).
+
+        Returns:
+            NumPy array of shape (len(sequences),) containing one embedding per sequence.
+        """
+
         all_embs = []
         with torch.no_grad():
             for i in tqdm(range(0, len(sequences), batch_size), desc='Extracting embs...'):
