@@ -1,0 +1,27 @@
+[project]
+name = "pipeline"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "Run testing models"
+
+dependencies = [
+  "numpy>=2.3.1",
+  "torch>=1.13",
+  "scikit-learn>=1.1",
+  "datasets>=2.9",
+  "tqdm>=4.64",
+  "enformer-pytorch>=0.5",
+  "transformers"
+]
+
+[project.scripts]
+pipeline = "main:main"
+
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages   = ["pipeline", "extractors", "data_dir"]
+py-modules = ["main"]

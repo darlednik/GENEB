@@ -12,9 +12,9 @@ class EmbeddingClassificationPipeline:
         self.output_directory = Path(output_directory)
         self.output_directory.mkdir(exist_ok=True, parents=True)
         self.batch_size = batch_size
-        self.logreg_params = {'max_iter': 1000, 'random_state': 42}
+        self.logreg_params = {'max_iter': 1000}
 
-    def evaluate_from_csv(self, dataset: list[dict], task_name: str, shots=(1, 5, 10, 20), trials=5):
+    def evaluate_from_csv(self, dataset: list[dict], task_name: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997)):
         train = [x for x in dataset if x['split'] == 'train']
         test = [x for x in dataset if x['split'] == 'test']
 
@@ -29,8 +29,11 @@ class EmbeddingClassificationPipeline:
         extractor_name = self.extractor.__class__.__name__.lower()
 
         full_metrics = defaultdict(list)
-        for _ in range(trials):
-            clf = LogisticRegression(**self.logreg_params).fit(train_embeddings, train_labels)
+        
+        for seed in seeds:
+            params = dict(self.logreg_base_params, random_state=seed)
+            clf = LogisticRegression(**params).fit(train_embeddings, train_labels)
+
             preds = clf.predict(test_embeddings)
             full_metrics['accuracy'].append(accuracy_score(test_labels, preds))
             full_metrics['f1_score'].append(f1_score(test_labels, preds, average='macro'))
@@ -46,16 +49,19 @@ class EmbeddingClassificationPipeline:
         self._save_result(task_name, extractor_name, full_results)
 
         few_shot_results = {}
-        rng = np.random.RandomState(42)
 
         for k in shots:
             accs, f1s, mccs = [], [], []
-            for _ in range(trials):
+            for seed in seeds:
+                rng = np.random.RandomState(seed)
+
                 idxs = np.concatenate([
-                    locs if k >= len(locs) else rng.choice(locs, size=k, replace=False)
+                    rng.choice(locs, size=min(k, len(locs)), replace=False)
                     for cls in np.unique(train_labels)
                     for locs in [np.where(train_labels == cls)[0]]
                 ])
+
+                params = dict(self.logreg_base_params, random_state=seed)
 
                 clf = LogisticRegression(**self.logreg_params).fit(train_embeddings[idxs], train_labels[idxs])
                 preds = clf.predict(test_embeddings)

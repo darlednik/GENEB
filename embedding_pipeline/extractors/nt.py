@@ -5,9 +5,8 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM
 import numpy as np
 import torch
 
-class NucleotideTransformerEmbeddingExtractor:
-    def __init__(self, device: str = None):
-        name_model = 'InstaDeepAI/nucleotide-transformer-v2-500m-multi-species'
+class NucleotideTransformerExtractor:
+    def __init__(self, name_model: str, device: str = 'cpu'):
         self.tokenizer = AutoTokenizer.from_pretrained(name_model, trust_remote_code=True)
         self.model = AutoModelForMaskedLM.from_pretrained(name_model, trust_remote_code=True)
         self.model.eval()

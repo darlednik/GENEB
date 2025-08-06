@@ -20,25 +20,27 @@ def load_csv_dataset(file_path):
     return df.to_dict(orient="records")
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--csv_dir", type=str, required=True, help="Path to directory with .csv files")
-    parser.add_argument("--output_dir", type=str, default="results", help="Directory for results")
-    parser.add_argument("--extractor", type=str, required=True, help="Extractor class name")
-    parser.add_argument("--module", type=str, default=None, help="Optional module name. Default: lowercase of class name.")
-    parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--batch_size", type=int, default=4)
-    args = parser.parse_args()
+def main(**kwargs):
+    csv_dir = Path(kwargs.get("csv_dir"))
+    output_dir = kwargs.get("output_dir")
+    extractor_name = kwargs.get("extractor")
+    module_name = kwargs.get("module") or extractor_name.lower()
+    device = kwargs.get("device")
+    batch_size = kwargs.get("batch_size")
+    name_model = kwargs.get("name_model")
 
-    logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
+    import torch
+    logging.info(f"Device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
 
-    module_name = args.module or args.extractor.lower()
-    ExtractorClass = load_extractor_class(module_name, args.extractor)
-    extractor = ExtractorClass(device=args.device)
+    ExtractorClass = load_extractor_class(module_name, extractor_name)
+    extractor = ExtractorClass(device=device, name_model=name_model)
 
-    pipeline = EmbeddingClassificationPipeline(extractor, output_directory=args.output_dir, batch_size=args.batch_size)
+    pipeline = EmbeddingClassificationPipeline(
+        extractor,
+        output_directory=output_dir,
+        batch_size=batch_size
+    )
 
-    csv_dir = Path(args.csv_dir)
     for csv_path in sorted(csv_dir.glob("*.csv")):
         task_name = csv_path.stem
         logging.info(f"Processing task: {task_name}")
@@ -49,4 +51,40 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--csv_dir", type=str, required=True,
+        help="Path to directory with .csv files"
+    )
+    parser.add_argument(
+        "--output_dir", type=str, default="results",
+        help="Directory for results"
+    )
+    parser.add_argument(
+        "--extractor", type=str, required=True,
+        help="Extractor class name"
+    )
+    parser.add_argument(
+        "--module", type=str, default=None,
+        help="Optional module name. Default: lowercase of class name."
+    )
+    parser.add_argument(
+        "--device", type=str, default="cuda",
+        help="Device for computation (cpu or cuda)"
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=4,
+        help="Batch size for processing"
+    )
+    parser.add_argument(
+        "--name_model", type=str, default=None,
+        help="Path or name of the model to load"
+    )
+
+    args = parser.parse_args()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s: %(message)s"
+    )
+
+    main(**vars(args))
