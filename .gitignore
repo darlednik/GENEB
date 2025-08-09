@@ -14,4 +14,4 @@ data_dir/*.csv
 data_dir
 tools-env
 weights
-dna_gpt
+tmp
