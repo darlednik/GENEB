@@ -5,8 +5,8 @@ import numpy as np
 import torch
 from pathlib import Path
 
-from utility_modules.DNAGPT.dna_gpt.model import DNAGPT
-from utility_modules.DNAGPT.dna_gpt.tokenizer import KmerTokenizer
+from utility_modules.DNAGPT_project.dna_gpt.model import DNAGPT
+from utility_modules.DNAGPT_project.dna_gpt.tokenizer import KmerTokenizer
 
 class DNAGPTExtractor:
     @staticmethod
