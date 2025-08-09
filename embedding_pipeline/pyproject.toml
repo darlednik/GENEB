@@ -1,19 +1,23 @@
 [project]
 name = "pipeline"
 version = "0.1.0"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 description = "Run testing models"
 
 dependencies = [
   "numpy>=2.3.1",
-  "torch>=1.13",
+  #"torch>=1.13",
   "scikit-learn>=1.1",
   "datasets>=2.9",
   "tqdm>=4.64",
   "enformer-pytorch>=0.5",
   "transformers",
-  "torch>=2.0.0",
+  "torch>=2.6.0",
   "ai2-olmo",
+  "triton",
+  "hf_xet",
+  "ai2-olmo",
+  "mamba-ssm"
 ]
 
 [project.scripts]
@@ -26,6 +30,3 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages   = ["pipeline", "extractors", "data_dir"]
 py-modules = ["main"]
-
-#[tool.uv.scripts]
-#setup-dnagpt = "bash -c 'if [ ! -d lib/DNAGPT ]; then git clone https://github.com/TencentAILabHealthcare/DNAGPT.git lib/DNAGPT; else cd lib/DNAGPT && git pull; fi'"

@@ -38,6 +38,7 @@ def main(**kwargs):
 
     pipeline = EmbeddingClassificationPipeline(
         extractor,
+        name_model,
         output_directory=output_dir,
         batch_size=batch_size
     )

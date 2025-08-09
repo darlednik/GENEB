@@ -8,9 +8,9 @@ class GeneratorExtractor:
     def __init__(self, name_model: str, device: str='cpu'):
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.tokenizer = AutoTokenizer.from_pretrained(name_model, remote_trust_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(name_model, trust_remote_code=True)
 
-        self.model = AutoModelForCausalLM.from_pretrained(name_model, output_hidden_states=True, remote_trust_code=True).to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(name_model, output_hidden_states=True, trust_remote_code=True).to(self.device)
         self.model.eval()
 
     def extract_embeddings(self, seqs: List[str], batch_size: int = 1) -> np.ndarray:

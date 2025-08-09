@@ -7,8 +7,9 @@ from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef
 from collections import defaultdict
 
 class EmbeddingClassificationPipeline:
-    def __init__(self, extractor, output_directory: str, batch_size: int = 10):
+    def __init__(self, extractor, name_model, output_directory: str, batch_size: int = 10):
         self.extractor = extractor
+        self.name_model = name_model
         self.output_directory = Path(output_directory)
         self.output_directory.mkdir(exist_ok=True, parents=True)
         self.batch_size = batch_size
@@ -84,6 +85,6 @@ class EmbeddingClassificationPipeline:
         }
 
     def _save_result(self, task_name: str, result_type: str, result_data):
-        path = self.output_directory / f"results_{task_name}_{result_type}.json"
+        path = self.output_directory / f"results_{Path(self.name_model).stem}_{task_name}_{result_type}.json"
         with open(path, 'w') as f:
             json.dump(result_data, f, indent=4)

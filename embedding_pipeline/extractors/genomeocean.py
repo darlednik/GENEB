@@ -7,7 +7,7 @@ import numpy as np
 
 class GenomeOceanExtractor:
     def __init__(
-        self, name_model: str, device: str='cpu'):
+        self, name_model: str, device: str='cpu', max_seq_length=1024):
 
         self.name_model = name_model
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -17,6 +17,8 @@ class GenomeOceanExtractor:
             trust_remote_code=True,
             padding_side="left",
         )
+
+        self.max_seq_length = max_seq_length
 
         self.dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
 
@@ -58,6 +60,7 @@ class GenomeOceanExtractor:
                     attention_mask=enc["attention_mask"],
                     output_hidden_states=True,
                     return_dict=True,
+                    use_cache=False
                 )
                 hidden = outputs.hidden_states[-1]
 
