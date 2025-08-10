@@ -254,6 +254,17 @@ wheels = [
 ]
 
 [[package]]
+name = "causal-conv1d"
+version = "1.5.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ninja" },
+    { name = "packaging" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/e5/2d2b2e067234c0022ff491ff8e574ca0c67094b2deb61249a2be21789cbb/causal_conv1d-1.5.2.tar.gz", hash = "sha256:9b7d8ec8d07e3590a1dfa010e4e87d1442635c3f96d665a3c1ce3025d8cc4b84", size = 23883, upload-time = "2025-07-18T22:15:36.988Z" }
+
+[[package]]
 name = "certifi"
 version = "2025.8.3"
 source = { registry = "https://pypi.org/simple" }
@@ -817,6 +828,11 @@ dependencies = [
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ba/2d/fbd909f6e6d48c491a9ed7ae68e8a890d8409aba4a6356741e2a9c6adad5/mamba_ssm-2.2.5.tar.gz", hash = "sha256:5055c8e631a22bb3cfc9958828a7a57ea14deef2ab2a98dcf425a27c87dcf6a7", size = 113753, upload-time = "2025-07-19T06:16:06.875Z" }
 
+[package.optional-dependencies]
+causal-conv1d = [
+    { name = "causal-conv1d" },
+]
+
 [[package]]
 name = "markdown-it-py"
 version = "3.0.0"
@@ -1240,7 +1256,7 @@ dependencies = [
     { name = "datasets" },
     { name = "enformer-pytorch" },
     { name = "hf-xet" },
-    { name = "mamba-ssm" },
+    { name = "mamba-ssm", extra = ["causal-conv1d"] },
     { name = "numpy" },
     { name = "scikit-learn" },
     { name = "torch" },
@@ -1255,7 +1271,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=2.9" },
     { name = "enformer-pytorch", specifier = ">=0.5" },
     { name = "hf-xet" },
-    { name = "mamba-ssm" },
+    { name = "mamba-ssm", extras = ["causal-conv1d"] },
     { name = "numpy", specifier = ">=2.3.1" },
     { name = "scikit-learn", specifier = ">=1.1" },
     { name = "torch", specifier = ">=2.6.0" },

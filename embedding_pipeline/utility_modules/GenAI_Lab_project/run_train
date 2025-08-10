@@ -1,0 +1,81 @@
+#!/bin/bash
+#SBATCH --job-name=bimamba
+#SBATCH --partition=gpu-he
+#SBATCH --gres=gpu:l40s:3
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=3
+#SBATCH --cpus-per-task=7
+#SBATCH --mem=160G       #  NEW LINE: use all memory allowed
+#SBATCH --time=23:00:00
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+
+
+# ───── Env ──────────────────────────────────────
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate genai
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+# ───── Test ───────────────────────────
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:64
+export CUDA_LAUNCH_BLOCKING=1                # GPU kernel test
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export NCCL_DEBUG=INFO
+export NCCL_ASYNC_ERROR_HANDLING=1
+export TORCHELASTIC_ERROR_FILE=${SLURM_SUBMIT_DIR}/error_%r.json
+
+# ───── Print Info ─────────────────────────
+echo "====== Job $SLURM_JOB_ID on $SLURM_NODELIST ======"
+nproc
+nvidia-smi
+which python
+python -V
+date
+echo "=================================================="
+
+mkdir -p logs/mem_logs
+RAM_LOG="logs/mem_logs/ram_monitor_${SLURM_JOB_ID}.log"
+echo "Start RAM monitor at $(date)" > $RAM_LOG
+echo "Format: [Time] [Used_MB] [Free_MB] [Available_MB]" >> $RAM_LOG
+
+(while true; do
+    timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    mem_line=$(free -m | awk '/^Mem:/ {print $3, $4, $7}')
+    echo "$timestamp $mem_line" >> $RAM_LOG
+    sleep 60
+done) &
+
+RAM_MONITOR_PID=$!
+
+mkdir -p logs/gpu_logs
+GPU_LOG="logs/gpu_logs/gpu_monitor_${SLURM_JOB_ID}.log"
+echo "Start GPU monitor at $(date)" > $GPU_LOG
+echo "Format: [Time] [GPU_IDX] [Used_MB] [Free_MB] [Temp_C] [Util_%]" >> $GPU_LOG
+
+(while true; do
+    timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    nvidia-smi --query-gpu=index,memory.used,memory.free,temperature.gpu,utilization.gpu \
+               --format=csv,noheader,nounits \
+               | awk -v ts="$timestamp" '{print ts, $0}' >> $GPU_LOG
+    sleep 60
+done) &
+
+GPU_MONITOR_PID=$!
+
+# ───── DDP ────────────────────────────────
+mkdir -p logs/rank_logs
+export PYTHONUNBUFFERED=1
+
+python -m torch.distributed.run \
+       --nproc_per_node 3 \
+       --rdzv_backend=c10d \
+       --rdzv_endpoint=localhost:12345 \
+       --tee 2 \
+       --log_dir logs/rank_logs \
+       train_model.py 2>&1 | tee logs/rank_logs/tee_rank0.txt
+
+trap "kill $RAM_MONITOR_PID $GPU_MONITOR_PID" EXIT

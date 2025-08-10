@@ -1,6 +1,6 @@
 import torch
 from transformers import AutoTokenizer
-from BiMambaForMaskedLM import BiMambaForMaskedLM
+from utility_modules.GenAI_Lab_project.BiMambaForMaskedLM import BiMambaForMaskedLM
 from typing import List
 import numpy as np
 from tqdm import tqdm

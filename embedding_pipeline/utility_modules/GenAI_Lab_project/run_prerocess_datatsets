@@ -1,0 +1,44 @@
+#!/bin/bash
+#SBATCH --job-name=bimamba-preprocess
+#SBATCH --partition=gpu-he
+#SBATCH --gres=gpu:l40s:1            # Use 1 L40S GPU
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1          # One task (one GPU)
+#SBATCH --cpus-per-task=6            # 6 CPUs for data preprocessing
+#SBATCH --mem=256G                   # Use all memory allowed
+#SBATCH --time=12:00:00
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+
+# Create log folder if needed
+mkdir -p logs
+
+# Load and activate conda environment
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate genai
+
+# CPU threading tuning
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+# (Optional) GPU diagnostics
+echo "=== Preprocess Environment Info ==="
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node: $SLURM_NODELIST"
+echo "CPUs per task: $SLURM_CPUS_PER_TASK"
+nproc
+nvidia-smi
+which python
+python --version
+date
+echo "==================================="
+
+# Run preprocessing
+python preprocess_datasets.py
+
+
+
+
+
+
