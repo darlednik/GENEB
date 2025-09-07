@@ -50,11 +50,12 @@ class EmbeddingClassificationPipeline:
             data_split_labels = np.array([x['label'][0] for x in data_split])
 
             return data_split_sequences, data_split_labels
-
-        return None, None
+        
+        else:
+            raise ValueError(f"Missing {task_name.split('@@')[0]}. Available task_names: eqtl_prediction, enhancer_target_gene_prediction")
     
     def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997)) -> dict:
-        print("TASK_NAME: ", task_name)
+        
         if format_reader == "dnalongbench":
             if task_name.split("@@")[0] == 'eqtl_prediction':
                 train_sequences, train_labels = self._prepare_data_dnalongbench(dataset, split="train", task_name=task_name)

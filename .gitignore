@@ -15,6 +15,7 @@ data_dir_*
 tools-env
 weights
 tmp
+temp
 run_long_bench.py
 transfer.py
 s3_to_server.py
