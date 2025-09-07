@@ -22,6 +22,8 @@ class DNAHLMExtractor:
         )
         self.model.eval()
 
+        
+
     def extract_embeddings(self, seqs: List[str], batch_size: int = 1) -> np.ndarray:
         """
         Compute mean-pooled embeddings for a list of genomic sequences.
@@ -42,7 +44,8 @@ class DNAHLMExtractor:
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
-                    add_special_tokens=True
+                    max_length=256
+                   # add_special_tokens=True
                 )
                 input_ids = enc.input_ids.to(self.device)
                 attention_mask = enc.attention_mask.to(self.device)

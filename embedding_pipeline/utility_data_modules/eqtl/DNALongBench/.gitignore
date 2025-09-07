@@ -1,0 +1,15 @@
+
+jupyter*
+*nfs*
+__pycache__/
+*.png
+legacy
+scripts/__pycache__
+scripts/.ipynb*
+puffin_manuscript
+experiments/CNN/__pycache__
+experiments/CNN/*.ipynb*
+experiments/CNN/experiments
+experiments/GENERator/GENERator
+# experiments/Evo2/*.sh
+experiments/Evo2_CMP_ETGP_eQTLP

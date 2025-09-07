@@ -6,6 +6,12 @@ import pandas as pd
 from pathlib import Path
 from pipeline.classification import EmbeddingClassificationPipeline
 import torch
+from utility_data_modules.eqtl.DNALongBench.dnalongbench.utils import load_data          
+
+
+DICT_DNALONGBENCH_NAME_TASK_SUBSET = {"enhancer_target_gene_prediction": [None],
+                     "eqtl_prediction": ['Adipose_Subcutaneous', 'Artery_Tibial', 'Cells_Cultured_fibroblasts', 'Muscle_Skeletal', 'Nerve_Tibial', 'Skin_Not_Sun_Exposed_Suprapubic', 'Skin_Sun_Exposed_Lower_leg', 'Thyroid', 'Whole_Blood']
+                    }
 
 
 def load_extractor_class(module_name: str, class_name: str):
@@ -20,15 +26,27 @@ def load_csv_dataset(file_path):
         raise ValueError(f"Missing columns in {file_path}: {required_cols - set(df.columns)}")
     return df.to_dict(orient="records")
 
+def load_dnalongbench(root: str, task_name: str, subset: str, batch_size: int):
+    train, _, test = load_data(
+        root=root,
+        task_name=task_name,
+        subset=subset,
+        batch_size=batch_size
+    )
+
+    return ([{**kv, "split": "train"} for kv in list(train)] + 
+            [{**kv, "split": "test"} for kv in list(test)])
 
 def main(**kwargs):
-    csv_dir = Path(kwargs.get("csv_dir"))
+    data_dir = Path(kwargs.get("data_dir"))
     output_dir = kwargs.get("output_dir")
     extractor_name = kwargs.get("extractor")
     module_name = kwargs.get("module") or extractor_name.lower()
     device = kwargs.get("device")
     batch_size = kwargs.get("batch_size")
     name_model = kwargs.get("name_model")
+    n_jobs = kwargs.get("n_jobs")
+    format_reader = kwargs.get("format_reader")
 
 
     logging.info(f"Device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
@@ -40,14 +58,25 @@ def main(**kwargs):
         extractor,
         name_model,
         output_directory=output_dir,
-        batch_size=batch_size
+        batch_size=batch_size,
+        n_jobs=n_jobs
     )
 
-    for csv_path in sorted(csv_dir.glob("*.csv")):
-        task_name = csv_path.stem
-        logging.info(f"Processing task: {task_name}")
-        dataset = load_csv_dataset(csv_path)
-        pipeline.evaluate_from_csv(dataset, task_name=task_name)
+    if format_reader == "csv":
+        for csv_path in sorted(data_dir.glob("*.csv")):
+            task_name = csv_path.stem
+            logging.info(f"Processing task: {task_name}")
+            dataset = load_csv_dataset(csv_path)
+            pipeline.evaluate(dataset, task_name=task_name, format_reader=format_reader)
+
+    elif format_reader == "dnalongbench":
+        for task_name, list_subsets in DICT_DNALONGBENCH_NAME_TASK_SUBSET.items():
+            for subset in list_subsets:
+                logging.info(f"Processing DNALongBench, task_name: {task_name}, subset: {subset}")
+
+                dataset = load_dnalongbench(root=data_dir, task_name=task_name, subset=subset, batch_size=1)
+                pipeline.evaluate(dataset, task_name=task_name + "@@" + (subset if subset else ''), format_reader=format_reader)
+    
 
     logging.info("All tasks completed")
 
@@ -55,8 +84,8 @@ def main(**kwargs):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--csv_dir", type=str, required=True,
-        help="Path to directory with .csv files"
+        "--data_dir", type=str, required=True,
+        help="Path to directory with .csv files or benchmark folders"
     )
     parser.add_argument(
         "--output_dir", type=str, default="results",
@@ -81,6 +110,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--name_model", type=str, default=None,
         help="Path or name of the model to load"
+    )
+
+    parser.add_argument(
+        "--n_jobs", type=int, default=32,
+        help="Number jobs for training logreg"
+    
+    )
+
+    parser.add_argument(
+        "--format_reader", type=str, default=None,
+        help="Formats: csv, dnalongbench"
     )
 
     args = parser.parse_args()

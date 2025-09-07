@@ -3,29 +3,87 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef
+from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef, roc_auc_score
 from collections import defaultdict
+import logging
+from typing import List, Dict, Tuple
 
 class EmbeddingClassificationPipeline:
-    def __init__(self, extractor, name_model, output_directory: str, batch_size: int = 10):
+    def __init__(self, extractor, name_model, output_directory: str, batch_size: int = 10, n_jobs: int = 32):
         self.extractor = extractor
         self.name_model = name_model
         self.output_directory = Path(output_directory)
         self.output_directory.mkdir(exist_ok=True, parents=True)
         self.batch_size = batch_size
-        self.logreg_params = {'max_iter': 1000}
+        self.n_jobs = n_jobs
+        self.logreg_params = {'max_iter': 1000, 'n_jobs': self.n_jobs}
+        
+        logging.info(f"Logreg params: {self.logreg_params}")
 
-    def evaluate_from_csv(self, dataset: list[dict], task_name: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997)):
-        train = [x for x in dataset if x['split'] == 'train']
-        test = [x for x in dataset if x['split'] == 'test']
+    @staticmethod
+    def _prepare_data_from_csv(dataset: List[Dict], split: str) -> Tuple[List[str], np.array]:
+        
+        data_split = [x for x in dataset if x['split'] == split]
 
-        train_sequences = [x['text'] for x in train]
-        train_labels = np.array([x['label'] for x in train])
-        test_sequences = [x['text'] for x in test]
-        test_labels = np.array([x['label'] for x in test])
+        data_split_sequences = [x['text'] for x in data_split]
+        data_split_labels = np.array([x['label'] for x in data_split])
+        
+        return data_split_sequences, data_split_labels
 
-        train_embeddings = self.extractor.extract_embeddings(train_sequences, self.batch_size)
-        test_embeddings = self.extractor.extract_embeddings(test_sequences, self.batch_size)
+    @staticmethod
+    def _prepare_data_dnalongbench(dataset: List[Dict], split: str, task_name: str) -> Tuple[List[str], np.array]:
+        
+        data_split = [x for x in dataset if x['split'] == split]
+
+        if task_name.split("@@")[0] == "eqtl_prediciton":
+            data_split = [x for x in dataset if x['split'] == split]
+
+            data_split_labels = np.array([x['y'][0] for x in data_split])
+        
+            return data_split, data_split_labels
+
+        elif task_name.split("@@")[0] == "enhancer_target_gene_prediction":
+            
+            data_split = [x for x in dataset if x['split'] == split]
+            
+            data_split_sequences = [x['sequence'][0] for x in data_split]
+            data_split_labels = np.array([x['label'][0] for x in data_split])
+
+            return data_split_sequences, data_split_labels
+
+        return None, None
+    
+    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997)) -> dict:
+        print("TASK_NAME: ", task_name)
+        if format_reader == "dnalongbench":
+            if task_name.split("@@")[0] == 'eqtl_prediction':
+                train_sequences, train_labels = self._prepare_data_dnalongbench(dataset, split="train", task_name=task_name)
+                test_sequences, test_labels = self._prepare_data_dnalongbench(dataset, split="test", task_name=task_name)
+            
+                train_embeddings_x_ref = self.extractor.extract_embeddings([x['x_ref'][0] for x in train_sequences], self.batch_size)
+                test_embeddings_x_ref = self.extractor.extract_embeddings([x['x_ref'][0] for x in test_sequences], self.batch_size)
+
+                train_embeddings_x_alt = self.extractor.extract_embeddings([x['x_alt'][0] for x in train_sequences], self.batch_size)
+                test_embeddings_x_alt = self.extractor.extract_embeddings([x['x_alt'][0] for x in test_sequences], self.batch_size)
+
+                train_embeddings = train_embeddings_x_alt - train_embeddings_x_ref
+                test_embeddings = test_embeddings_x_alt - test_embeddings_x_ref
+
+            elif task_name.split("@@")[0] == "enhancer_target_gene_prediction":
+                train_sequences, train_labels = self._prepare_data_dnalongbench(dataset, split="train", task_name=task_name)
+                test_sequences, test_labels = self._prepare_data_dnalongbench(dataset, split="test", task_name=task_name)
+
+                train_embeddings = self.extractor.extract_embeddings(train_sequences, self.batch_size)
+                test_embeddings = self.extractor.extract_embeddings(test_sequences, self.batch_size)
+
+
+        elif format_reader == "csv":
+
+            train_sequences, train_labels = self._prepare_data_from_csv(dataset, split="train")
+            test_sequences, test_labels = self._prepare_data_from_csv(dataset, split="test")
+
+            train_embeddings = self.extractor.extract_embeddings(train_sequences, self.batch_size)
+            test_embeddings = self.extractor.extract_embeddings(test_sequences, self.batch_size)
 
         extractor_name = self.extractor.__class__.__name__.lower()
 
@@ -39,6 +97,8 @@ class EmbeddingClassificationPipeline:
             full_metrics['accuracy'].append(accuracy_score(test_labels, preds))
             full_metrics['f1_score'].append(f1_score(test_labels, preds, average='macro'))
             full_metrics['mcc'].append(matthews_corrcoef(test_labels, preds))
+            
+            full_metrics['rocauc'].append(roc_auc_score(test_labels, preds))
 
         full_results = {
             metric: {
@@ -52,7 +112,7 @@ class EmbeddingClassificationPipeline:
         few_shot_results = {}
 
         for k in shots:
-            accs, f1s, mccs = [], [], []
+            accs, f1s, mccs, aucrocs = [], [], [], []
             for seed in seeds:
                 rng = np.random.RandomState(seed)
 
@@ -74,7 +134,8 @@ class EmbeddingClassificationPipeline:
             few_shot_results[k] = {
                 'accuracy': {'mean': float(np.mean(accs)), 'std': float(np.std(accs))},
                 'f1_score': {'mean': float(np.mean(f1s)), 'std': float(np.std(f1s))},
-                'mcc': {'mean': float(np.mean(mccs)), 'std': float(np.std(mccs))}
+                'mcc': {'mean': float(np.mean(mccs)), 'std': float(np.std(mccs))},
+                "aucroc": {'mean': float(np.mean(aucrocs)), 'std': float(np.std(aucrocs))}
             }
 
             self._save_result(task_name, f"{extractor_name}_k-{k}", few_shot_results[k])

@@ -1,0 +1,3 @@
+[submodule "experiments/Caduceus_CMP_eQTLP_ETGP"]
+	path = experiments/Caduceus_CMP_eQTLP_ETGP
+	url = https://github.com/wenduocheng/DNALongBench.git

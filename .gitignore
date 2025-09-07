@@ -10,8 +10,12 @@ __pycache__/
 
 # результаты и данные
 results/
-data_dir/*.csv 
-data_dir
+data_dir 
+data_dir_*
 tools-env
 weights
 tmp
+run_long_bench.py
+transfer.py
+s3_to_server.py
+trans_files

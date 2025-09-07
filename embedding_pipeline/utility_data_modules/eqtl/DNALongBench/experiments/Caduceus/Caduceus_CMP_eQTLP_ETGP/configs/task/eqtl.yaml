@@ -1,0 +1,5 @@
+# _target_: tasks.tasks.BaseTask
+_name_: eqtl
+loss: cross_entropy
+metrics: cross_entropy
+torchmetrics: null

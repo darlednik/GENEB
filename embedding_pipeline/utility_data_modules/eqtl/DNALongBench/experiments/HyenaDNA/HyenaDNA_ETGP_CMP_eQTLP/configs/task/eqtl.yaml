@@ -1,0 +1,5 @@
+# _target_: tasks.tasks.BaseTask
+_name_: eqtl
+loss: eqtl_loss
+metrics: eqtl_loss
+torchmetrics: null

@@ -1,0 +1,7 @@
+legacy
+results
+__pycache__
+notebooks
+logs
+GENERator
+.ipynb_checkpoints

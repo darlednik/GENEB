@@ -13,6 +13,8 @@ class EnformerPyTorchExtractor:
             name_model, 
             use_tf_gamma=False
         )
+
+        
         self.model.to(self.device).eval()
         
         config = self.model.config

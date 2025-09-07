@@ -112,7 +112,9 @@ class DNAGPT(GPT):
                 number_block=None):
         x = self._embedding_impl(token_ids, numbers, number_block)
         x = self._transformer_impl(x)
-        return self._head_impl(x, number_loc)
+        logits = self._head_impl(x, number_loc)
+
+        return logits, x
 
     @classmethod
     def from_name(cls, name, vocab_size):

@@ -1,0 +1,5 @@
+# _target_: tasks.tasks.BaseTask
+_name_: binary_classification
+loss: binary_classification_loss
+metrics: binary_classification_loss
+torchmetrics: null
