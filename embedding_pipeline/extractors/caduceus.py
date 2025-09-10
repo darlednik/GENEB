@@ -37,8 +37,7 @@ class CaduceusExtractor:
                                         return_attention_mask=True,
                                         return_tensors="pt")
 
-                inputs = {"input_ids": enc["input_ids"].to(self.device),
-                          'attention_mask': enc['attention_mask'].to(self.device)}
+                inputs = {"input_ids": enc["input_ids"].to(self.device)}
                
                 
                 outputs = self.model(**inputs)

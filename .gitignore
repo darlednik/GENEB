@@ -20,3 +20,5 @@ run_long_bench.py
 transfer.py
 s3_to_server.py
 trans_files
+ablation_study
+.transfer.py.swp

@@ -35,7 +35,7 @@ class EmbeddingClassificationPipeline:
         
         data_split = [x for x in dataset if x['split'] == split]
 
-        if task_name.split("@@")[0] == "eqtl_prediciton":
+        if task_name.split("@@")[0] == "eqtl_prediction":
             data_split = [x for x in dataset if x['split'] == split]
 
             data_split_labels = np.array([x['y'][0] for x in data_split])
@@ -69,6 +69,7 @@ class EmbeddingClassificationPipeline:
 
                 train_embeddings = train_embeddings_x_alt - train_embeddings_x_ref
                 test_embeddings = test_embeddings_x_alt - test_embeddings_x_ref
+                
 
             elif task_name.split("@@")[0] == "enhancer_target_gene_prediction":
                 train_sequences, train_labels = self._prepare_data_dnalongbench(dataset, split="train", task_name=task_name)
@@ -86,6 +87,7 @@ class EmbeddingClassificationPipeline:
             train_embeddings = self.extractor.extract_embeddings(train_sequences, self.batch_size)
             test_embeddings = self.extractor.extract_embeddings(test_sequences, self.batch_size)
 
+
         extractor_name = self.extractor.__class__.__name__.lower()
 
         full_metrics = defaultdict(list)
@@ -99,7 +101,8 @@ class EmbeddingClassificationPipeline:
             full_metrics['f1_score'].append(f1_score(test_labels, preds, average='macro'))
             full_metrics['mcc'].append(matthews_corrcoef(test_labels, preds))
             
-            full_metrics['rocauc'].append(roc_auc_score(test_labels, preds))
+            if format_reader == 'dnalongbench':
+                full_metrics['rocauc'].append(roc_auc_score(test_labels, preds))
 
         full_results = {
             metric: {
@@ -113,7 +116,7 @@ class EmbeddingClassificationPipeline:
         few_shot_results = {}
 
         for k in shots:
-            accs, f1s, mccs, aucrocs = [], [], [], []
+            accs, f1s, mccs, rocaucs = [], [], [], []
             for seed in seeds:
                 rng = np.random.RandomState(seed)
 
@@ -122,9 +125,8 @@ class EmbeddingClassificationPipeline:
                     for cls in np.unique(train_labels)
                     for locs in [np.where(train_labels == cls)[0]]
                 ])
-
+                
                 params = dict(self.logreg_params, random_state=seed)
-
                 clf = LogisticRegression(**self.logreg_params).fit(train_embeddings[idxs], train_labels[idxs])
                 preds = clf.predict(test_embeddings)
 
@@ -132,12 +134,17 @@ class EmbeddingClassificationPipeline:
                 f1s.append(f1_score(test_labels, preds, average='macro'))
                 mccs.append(matthews_corrcoef(test_labels, preds))
 
+                if format_reader == "dnalongbench":
+                    rocaucs.append(roc_auc_score(test_labels, preds))
+
             few_shot_results[k] = {
                 'accuracy': {'mean': float(np.mean(accs)), 'std': float(np.std(accs))},
                 'f1_score': {'mean': float(np.mean(f1s)), 'std': float(np.std(f1s))},
                 'mcc': {'mean': float(np.mean(mccs)), 'std': float(np.std(mccs))},
-                "aucroc": {'mean': float(np.mean(aucrocs)), 'std': float(np.std(aucrocs))}
             }
+
+            if format_reader == "dnalongbench":
+                few_shot_results[k]['aucroc'] = {'mean': float(np.mean(rocaucs)), 'std': float(np.std(rocaucs))}
 
             self._save_result(task_name, f"{extractor_name}_k-{k}", few_shot_results[k])
 

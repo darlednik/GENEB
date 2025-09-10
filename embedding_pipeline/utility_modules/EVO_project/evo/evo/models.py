@@ -11,7 +11,6 @@ from stripedhyena.model import StripedHyena
 from stripedhyena.tokenizer import CharLevelTokenizer
 import sys
 
-#sys.path.insert(0, "./utility_modules/EVO_project/stripedhyena/stripedhyena")
 
 MODEL_NAMES = [
     'evo-1.5-8k-base',
@@ -84,11 +83,9 @@ def load_checkpoint(
     """
 
     # Map model name to HuggingFace model name.
-    import stripedhyena
-    print(f"stripedhyena path: {stripedhyena.__file__}")
-
+    
     hf_model_name = HF_MODEL_NAME_MAP[model_name]
-    hf_model_name_modify = "./utility_modules/EVO_project/stripedhyena"
+    
     # Load model config.
 
     model_config = AutoConfig.from_pretrained(
