@@ -54,7 +54,7 @@ class EmbeddingClassificationPipeline:
         else:
             raise ValueError(f"Missing {task_name.split('@@')[0]}. Available task_names: eqtl_prediction, enhancer_target_gene_prediction")
     
-    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997), type_train = "all") -> dict:
+    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997), type_train = "all") -> Dict[Dict[str, float]]:
         
         if format_reader == "dnalongbench":
             if task_name.split("@@")[0] == 'eqtl_prediction':
