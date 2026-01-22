@@ -1,7 +1,6 @@
 import json
 import numpy as np
 from pathlib import Path
-from tqdm import tqdm
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef, roc_auc_score
 from collections import defaultdict
@@ -54,7 +53,7 @@ class EmbeddingClassificationPipeline:
         else:
             raise ValueError(f"Missing {task_name.split('@@')[0]}. Available task_names: eqtl_prediction, enhancer_target_gene_prediction")
     
-    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997), type_train = "all") -> Dict[Dict[str, float]]:
+    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997), type_train = "all") -> Dict[Dict[str, float], Dict[str, float]]:
         
         if format_reader == "dnalongbench":
             if task_name.split("@@")[0] == 'eqtl_prediction':
