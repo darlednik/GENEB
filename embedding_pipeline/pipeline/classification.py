@@ -54,7 +54,7 @@ class EmbeddingClassificationPipeline:
         else:
             raise ValueError(f"Missing {task_name.split('@@')[0]}. Available task_names: eqtl_prediction, enhancer_target_gene_prediction")
     
-    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997)) -> dict:
+    def evaluate(self, dataset: list[dict], task_name: str, format_reader: str, shots=(1, 10), seeds=(13, 17, 42, 123, 997), type_train = "all") -> dict:
         
         if format_reader == "dnalongbench":
             if task_name.split("@@")[0] == 'eqtl_prediction':
@@ -80,73 +80,76 @@ class EmbeddingClassificationPipeline:
 
 
         elif format_reader == "csv":
-
+            
             train_sequences, train_labels = self._prepare_data_from_csv(dataset, split="train")
             test_sequences, test_labels = self._prepare_data_from_csv(dataset, split="test")
 
             train_embeddings = self.extractor.extract_embeddings(train_sequences, self.batch_size)
             test_embeddings = self.extractor.extract_embeddings(test_sequences, self.batch_size)
-
-
+            
+        
         extractor_name = self.extractor.__class__.__name__.lower()
 
         full_metrics = defaultdict(list)
-        
-        for seed in seeds:
-            params = dict(self.logreg_params, random_state=seed)
-            clf = LogisticRegression(**params).fit(train_embeddings, train_labels)
-
-            preds = clf.predict(test_embeddings)
-            full_metrics['accuracy'].append(accuracy_score(test_labels, preds))
-            full_metrics['f1_score'].append(f1_score(test_labels, preds, average='macro'))
-            full_metrics['mcc'].append(matthews_corrcoef(test_labels, preds))
-            
-            if format_reader == 'dnalongbench':
-                full_metrics['rocauc'].append(roc_auc_score(test_labels, preds))
-
-        full_results = {
-            metric: {
-                'mean': float(np.mean(values)),
-                'std': float(np.std(values))
-            }
-            for metric, values in full_metrics.items()
-        }
-        self._save_result(task_name, extractor_name, full_results)
-
+        full_results = {}
         few_shot_results = {}
 
-        for k in shots:
-            accs, f1s, mccs, rocaucs = [], [], [], []
+        if type_train != "only_few_shot":
+        
             for seed in seeds:
-                rng = np.random.RandomState(seed)
-
-                idxs = np.concatenate([
-                    rng.choice(locs, size=min(k, len(locs)), replace=False)
-                    for cls in np.unique(train_labels)
-                    for locs in [np.where(train_labels == cls)[0]]
-                ])
-                
                 params = dict(self.logreg_params, random_state=seed)
-                clf = LogisticRegression(**self.logreg_params).fit(train_embeddings[idxs], train_labels[idxs])
-                preds = clf.predict(test_embeddings)
+                clf = LogisticRegression(**params).fit(train_embeddings, train_labels)
 
-                accs.append(accuracy_score(test_labels, preds))
-                f1s.append(f1_score(test_labels, preds, average='macro'))
-                mccs.append(matthews_corrcoef(test_labels, preds))
+                preds = clf.predict(test_embeddings)
+                full_metrics['accuracy'].append(accuracy_score(test_labels, preds))
+                full_metrics['f1_score'].append(f1_score(test_labels, preds, average='macro'))
+                full_metrics['mcc'].append(matthews_corrcoef(test_labels, preds))
+                
+                if format_reader == 'dnalongbench':
+                    full_metrics['rocauc'].append(roc_auc_score(test_labels, preds))
+
+            full_results = {
+                metric: {
+                    'mean': float(np.mean(values)),
+                    'std': float(np.std(values))
+                }
+                for metric, values in full_metrics.items()
+            }
+            self._save_result(task_name, extractor_name, full_results)
+
+        if type_train != "only_full":
+            for k in shots:
+                accs, f1s, mccs, rocaucs = [], [], [], []
+                for seed in seeds:
+                    rng = np.random.RandomState(seed)
+
+                    idxs = np.concatenate([
+                        rng.choice(locs, size=min(k, len(locs)), replace=False)
+                        for cls in np.unique(train_labels)
+                        for locs in [np.where(train_labels == cls)[0]]
+                    ])
+                    
+                    params = dict(self.logreg_params, random_state=seed)
+                    clf = LogisticRegression(**params).fit(train_embeddings[idxs], train_labels[idxs])
+                    preds = clf.predict(test_embeddings)
+
+                    accs.append(accuracy_score(test_labels, preds))
+                    f1s.append(f1_score(test_labels, preds, average='macro'))
+                    mccs.append(matthews_corrcoef(test_labels, preds))
+
+                    if format_reader == "dnalongbench":
+                        rocaucs.append(roc_auc_score(test_labels, preds))
+
+                few_shot_results[k] = {
+                    'accuracy': {'mean': float(np.mean(accs)), 'std': float(np.std(accs))},
+                    'f1_score': {'mean': float(np.mean(f1s)), 'std': float(np.std(f1s))},
+                    'mcc': {'mean': float(np.mean(mccs)), 'std': float(np.std(mccs))},
+                }
 
                 if format_reader == "dnalongbench":
-                    rocaucs.append(roc_auc_score(test_labels, preds))
+                    few_shot_results[k]['aucroc'] = {'mean': float(np.mean(rocaucs)), 'std': float(np.std(rocaucs))}
 
-            few_shot_results[k] = {
-                'accuracy': {'mean': float(np.mean(accs)), 'std': float(np.std(accs))},
-                'f1_score': {'mean': float(np.mean(f1s)), 'std': float(np.std(f1s))},
-                'mcc': {'mean': float(np.mean(mccs)), 'std': float(np.std(mccs))},
-            }
-
-            if format_reader == "dnalongbench":
-                few_shot_results[k]['aucroc'] = {'mean': float(np.mean(rocaucs)), 'std': float(np.std(rocaucs))}
-
-            self._save_result(task_name, f"{extractor_name}_k-{k}", few_shot_results[k])
+                self._save_result(task_name, f"{extractor_name}_k-{k}", few_shot_results[k])
 
         return {
             "full": full_results,

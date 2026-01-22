@@ -1,31 +1,35 @@
 # DNASurvey
 DNA Survey Research
 
-
-## Run script **run_embed_logreg/enformer/run_enformer.py**:
-
 ### Synchronize dependences and create enviroment
 
 ```bash
 uv sync
 ```
 
-### Run
-
-```bash
-uv run pipeline
-```
-
 ### Options
+## Command Line Arguments
 
-- `-b, --batch_size` – batch size (default: 10)  
-- `-d, --device` – device: `cpu` or `cuda` (default: cuda)  
-- `-o, --output_dir` – path to save outputs (default: .)  
-- `--log` – enable logging (INFO)
+### Required Arguments
+- `--data_dir` – Path to directory containing .csv files or benchmark folders with training/test data
+- `--extractor` – Name of the extractor class to use for embedding generation
+- `--name_model` – Path or name of the pre-trained model to load
 
-### Example
+### Optional Arguments
+- `-o, --output_dir` – Directory to save results (default: `results`)
+- `--module` – Optional module name for the extractor. Defaults to lowercase of class name
+- `-d, --device` – Computation device: `cpu` or `cuda` (default: `cuda`)
+- `-b, --batch_size` – Batch size for embedding extraction (default: `4`)
+- `--n_jobs` – Number of parallel jobs for logistic regression training (default: `32`)
+- `--format_reader` – Input data format: `csv` or `dnalongbench` (optional)
+- `--type_train` – Training strategy:
+  - `all` – Train on full dataset AND few-shot subsets (1 & 10 examples)
+  - `only_few_shot` – Train ONLY on few-shot subsets (1 & 10 examples)
+  - `only_full` – Train ONLY on full dataset (default: `all`)
+
+### Example run
 
 ```bash
-uv sync && uv run pipeline --batch_size=16 --device=cuda --output_dir=. --log
+uv run main.py --data_dir ./data_dir/ --output_dir ./results --extractor GenomeOceanExtractor --module genomeocean --device cuda:0 --batch_size 16 --name_model DOEJGI/GenomeOcean-500M --type_train all --format_reader csv --n_jobs 10
 
 ```

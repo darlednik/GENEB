@@ -2,12 +2,12 @@ from typing import List
 from tqdm import tqdm
 import numpy as np
 import torch
-
+from .base import BaseEmbeddingExtractor
 from utility_modules.EVO_project.evo.evo.models import Evo
 
-class EVOExtractor:
-    def __init__(self, name_model: str, device: str = 'cpu'):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+class EVOExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device = 'cpu'):
+        self.device = device
         evo_model = Evo(name_model)
         self.model, self.tokenizer = evo_model.model, evo_model.tokenizer
 

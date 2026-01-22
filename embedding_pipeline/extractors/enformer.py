@@ -1,85 +1,78 @@
-from enformer_pytorch import from_pretrained
-from typing import List
+from typing import List, Optional, Literal
 from tqdm import tqdm
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
+from enformer_pytorch import from_pretrained
 
-class EnformerPyTorchExtractor:
-    def __init__(self, name_model: str, device: str='cpu'):
-        self.device = device or torch.device(device if torch.cuda.is_available() else 'cpu')
-  
+
+class EnformerPyTorchExtractor(BaseEmbeddingExtractor):
+    def __init__(
+        self,
+        name_model: str,
+        device: str = "cpu",
+    ):
+        
+        self.device = device
+        self.seq_length = int(seq_length)
+
         self.model = from_pretrained(
-            name_model, 
-            use_tf_gamma=False
+            name_model,
+            use_tf_gamma=False,
         )
+        self.model.to(self.device)
+        self.model.eval()
 
-        
-        self.model.to(self.device).eval()
-        
-        config = self.model.config
-
-        self.seq_length = 196_608
-        self.target_length = config.target_length
+        self._map = {"A": 0, "C": 1, "G": 2, "T": 3, "N": 4}
 
     @staticmethod
-    def one_hot_seq(seq: str, seq_length: int):
+    def reverse_complement(seq: str) -> str:
+        comp = str.maketrans({"A": "T", "C": "G", "G": "C", "T": "A",
+                              "a": "t", "c": "g", "g": "c", "t": "a",
+                              "N": "N", "n": "n"})
+        return seq.translate(comp)[::-1]
+
+    def seq_to_indices(self, seq: str, length: int) -> torch.Tensor:
         """
-        Static helper to convert a sequence to one-hot tensor.
-
-        Args:
-            seq: Input nucleotide sequence.
-            seq_length: Fixed length for cropping/padding and encoding.
-
-        Returns:
-            One-hot encoded tensor of shape (4, seq_length).
+        Convert DNA sequence string to indices in {0...4} for A,C,G,T,N.
+        Pads with 'N' or truncates to length.
         """
-        mapping = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
-
-        seq = seq.upper().replace('U', 'T')
-
-        L = len(seq)
-        if L >= seq_length:
-            start = (L - seq_length) // 2
-            sub = seq[start:start + seq_length]
+        s = seq.upper()
+        if len(s) >= length:
+            s = s[:length]
         else:
-            pad = seq_length - L
-            left = pad // 2
-            sub = 'N' * left + seq + 'N' * (pad - left)
+            s = s + ("N" * (length - len(s)))
 
-        arr = np.zeros((seq_length, 4), dtype=np.float32)
-        for i, c in enumerate(sub):
-            if c in mapping:
-                arr[i, mapping[c]] = 1.0
-        return torch.tensor(arr)
+        arr = torch.empty(length, dtype=torch.long)
+        for i, ch in enumerate(s):
+            arr[i] = self._map.get(ch, 4)  # unknown -> N
+        return arr
 
-    def extract_embeddings(self, sequences: List[str], batch_size=1) -> np.ndarray:
+    def extract_embeddings(
+        self,
+        sequences: List[str],
+        batch_size: int = 1,
+    ) -> np.ndarray:
         """
-        Compute mean-pooled embeddings for a list of genomic sequences.
-
-        Each sequence is one-hot encoded, passed through the Enformer model,
-        and the 'human' output track is averaged over spatial and channel dimensions.
-
         Args:
-            sequences: List of nucleotide sequences (strings).
-            batch_size: Number of sequences to process at once (mem-efficient).
-
+            sequences: list of DNA strings
+            batch_size: batching
         Returns:
-            np.ndarray of shape (len(sequences), hidden_size)
+            np.ndarray shape (len(sequences), 3072)
         """
         all_embs = []
+
         with torch.no_grad():
             for i in tqdm(range(0, len(sequences), batch_size), desc="Extracting embs..."):
                 batch = sequences[i:i + batch_size]
 
-                arrs = [self.one_hot_seq(s, self.seq_length) for s in batch]
+                x = torch.stack([self.seq_to_indices(s, self.seq_length) for s in batch], dim=0).to(self.device)
 
-                tensor = torch.stack(arrs, dim=0).to(self.device)
+                # Forward pass with embeddings
+                _, emb = self.model(x, return_embeddings=True)  # emb: (B, 896, 3072)
+                pooled = emb.mean(dim=1)  # (B, 3072)
 
-                human = self.model(tensor)['human']
+                all_embs.append(pooled.detach().cpu().to(torch.float32).numpy())
 
-                emb = human.mean(dim=1).cpu().numpy()
-
-                all_embs.append(emb)
-                
         return np.concatenate(all_embs, axis=0)
+

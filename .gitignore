@@ -1,20 +1,25 @@
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 
-# venvs
 .venv/
 .tools-env/
 .uv/
 
-# результаты и данные
+run_embed_logreg
+notebooks
 results/
+results*
+res
 data_dir 
 data_dir_*
+comb_results
+comb_results_*
 tools-env
+transfer_file_zip
 weights
 tmp
+docker
 temp
 run_long_bench.py
 transfer.py
@@ -22,3 +27,6 @@ s3_to_server.py
 trans_files
 ablation_study
 .transfer.py.swp
+combine_results_results_v2.py
+optimal.sh
+

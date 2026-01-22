@@ -1,16 +1,16 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
 
-class MetageneExtractor:
-    def __init__(self, name_model: str, device: str = 'cpu'):
+class MetageneExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device = 'cpu'):
         self.name_model = name_model
 
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             name_model, trust_remote_code=True
@@ -35,6 +35,7 @@ class MetageneExtractor:
         """
 
         all_embs = []
+
         with torch.no_grad():
             for i in tqdm(range(0, len(sequences), batch_size), desc='Extracting embs...'):
                 batch_seqs = sequences[i:i+batch_size]

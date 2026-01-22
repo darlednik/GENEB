@@ -1,19 +1,20 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
 
-class OmniDNAExtractor:
+class OmniDNAExtractor(BaseEmbeddingExtractor):
     
-    def __init__(self, name_model: str, device: str = 'cpu'):
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    def __init__(self, name_model: str, device = 'cpu'):
+        self.device = device
         config = AutoConfig.from_pretrained(name_model, trust_remote_code=True, output_hidden_states=True)
         self.tokenizer = AutoTokenizer.from_pretrained(name_model, trust_remote_code=True)
         self.model = AutoModelForCausalLM.from_pretrained(name_model, config=config, trust_remote_code=True)
         self.model.to(self.device).eval()
+        self.max_length = 250
 
     def extract_embeddings(self, sequences: list[str], batch_size: int = 1) -> np.ndarray:
         """
@@ -25,6 +26,7 @@ class OmniDNAExtractor:
             np.ndarray of shape (len(sequences), hidden_size)
         """
         all_embeds = []
+
         with torch.no_grad():
             for i in tqdm(range(0, len(sequences), batch_size), desc="Extracting embs..."):
                 batch = sequences[i : i + batch_size]
@@ -33,7 +35,7 @@ class OmniDNAExtractor:
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
-                    max_length=250
+                    max_length=self.max_length
                 ).to(self.device)
 
 

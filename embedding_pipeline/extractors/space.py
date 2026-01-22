@@ -4,10 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from typing import List
-
-DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-sys.path.insert(0, os.path.join(DIR, "utility_modules/SPACE"))
+from .base import BaseEmbeddingExtractor
 
 from model.config_space import SpaceConfig
 from model.modeling_space import Space, TrainingSpace
@@ -15,9 +12,9 @@ from model.modeling_space import Space, TrainingSpace
 TrainingSpace.config_class = SpaceConfig
 
 
-class SPACEExtractor:
-    def __init__(self, name_model: str, device: str='cpu'):
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+class SPACEExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device ='cpu'):
+        self.device = device
         self.name_model = name_model
         self.model = Space.from_pretrained(name_model).to(self.device).eval()
 

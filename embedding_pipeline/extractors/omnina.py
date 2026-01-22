@@ -1,25 +1,22 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
-class OmniNAExtractor:
-    def __init__(self, name_model: str, device: str = 'cpu'):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+class OmniNAExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device = 'cpu'):
+        self.device = device
 
         self.tokenizer = AutoTokenizer.from_pretrained(name_model)
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        self.tokenizer.pad_token = self.tokenizer.eos_token
 
         self.model = AutoModel.from_pretrained(
             name_model,
             output_hidden_states=True
         ).to(self.device)
-
-        if self.model.config.pad_token_id is None:
-            self.model.config.pad_token_id = self.model.config.eos_token_id
         self.model.eval()
 
     def extract_embeddings(self, sequences: List[str], batch_size: int = 1) -> np.ndarray:

@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 import json
 import importlib
 import pandas as pd
@@ -7,6 +8,24 @@ from pathlib import Path
 from pipeline.classification import EmbeddingClassificationPipeline
 import torch
 from utility_data_modules.eqtl.DNALongBench.dnalongbench.utils import load_data          
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+PROJECT_ROOT = Path(__file__).parent
+PATHS = {
+    'PanGeneGraphTrans': PROJECT_ROOT / 'utility_modules' / 'deepgene' / 'DeepGene' / 'PanGeneGraphTrans',
+    'SPACE': PROJECT_ROOT / "utility_modules" / "SPACE"
+}
+
+
+for name, path in PATHS.items():
+    if path.exists():
+        sys.path.insert(0, str(path))
+        logging.info(f"Added {name}: {path}")
 
 
 DICT_DNALONGBENCH_NAME_TASK_SUBSET = {"enhancer_target_gene_prediction": [None],
@@ -47,6 +66,7 @@ def main(**kwargs):
     name_model = kwargs.get("name_model")
     n_jobs = kwargs.get("n_jobs")
     format_reader = kwargs.get("format_reader")
+    type_train = kwargs.get("type_train", "all")
 
 
     logging.info(f"Device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
@@ -67,7 +87,7 @@ def main(**kwargs):
             task_name = csv_path.stem
             logging.info(f"Processing task: {task_name}")
             dataset = load_csv_dataset(csv_path)
-            pipeline.evaluate(dataset, task_name=task_name, format_reader=format_reader)
+            pipeline.evaluate(dataset, task_name=task_name, format_reader=format_reader, type_train=type_train)
 
     elif format_reader == "dnalongbench":
         for task_name, list_subsets in DICT_DNALONGBENCH_NAME_TASK_SUBSET.items():
@@ -75,7 +95,7 @@ def main(**kwargs):
                 logging.info(f"Processing DNALongBench, task_name: {task_name}, subset: {subset}")
 
                 dataset = load_dnalongbench(root=data_dir, task_name=task_name, subset=subset, batch_size=1)
-                pipeline.evaluate(dataset, task_name=task_name + "@@" + (subset if subset else ''), format_reader=format_reader)
+                pipeline.evaluate(dataset, task_name=task_name + "@@" + (subset if subset else ''), format_reader=format_reader, type_train=type_train)
     
 
     logging.info("All tasks completed")
@@ -108,7 +128,7 @@ if __name__ == "__main__":
         help="Batch size for processing"
     )
     parser.add_argument(
-        "--name_model", type=str, default=None,
+        "--name_model", type=str, required=True,
         help="Path or name of the model to load"
     )
 
@@ -121,6 +141,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--format_reader", type=str, default=None,
         help="Formats: csv, dnalongbench"
+    )
+
+    parser.add_argument(
+        "--type_train", type=str, default="all",
+        help="A type of train process. Is avaiable: ['all', 'only_few_shot', 'only_full']. Default: 'all'"
     )
 
     args = parser.parse_args()

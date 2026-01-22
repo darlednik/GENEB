@@ -1,15 +1,15 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
-class HyenadnaExtractor:
-    def __init__(self, name_model: str, device: str = 'cpu'):
+class HyenadnaExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device = 'cpu'):
         self.name_model = name_model
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-        self.max_length = 160_000
+        self.device = device
+        
 
         self.dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
         
@@ -17,10 +17,11 @@ class HyenadnaExtractor:
         self.model = AutoModelForSequenceClassification.from_pretrained(
             name_model,
             torch_dtype=self.dtype,
-            device_map="auto",
+            device_map=self.device,
             trust_remote_code=True,
             output_hidden_states=True
         )
+        self.max_length = self.tokenizer.model_max_length
         self.model.eval()
 
     def extract_embeddings(self, sequences: List[str], batch_size: int = 1) -> np.ndarray:
@@ -33,23 +34,27 @@ class HyenadnaExtractor:
             np.ndarray of shape (len(sequences), hidden_size)
         """
         all_embeddings = []
-        for i in tqdm(range(0, len(sequences), batch_size), desc="Extracting embs..."):
-            batch_seqs = sequences[i:i + batch_size]
-            inputs = self.tokenizer(
-                batch_seqs,
-                padding=True,
-                truncation=True,
-                max_length=self.max_length,
-                return_tensors='pt'
-            )
-            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
-            with torch.no_grad():
+        with torch.no_grad():
+            for i in tqdm(range(0, len(sequences), batch_size), desc="Extracting embs..."):
+                batch_seqs = sequences[i:i + batch_size]
+                enc = self.tokenizer(
+                    batch_seqs,
+                    padding=True,
+                    truncation=True,
+                    add_special_tokens=False,
+                    return_attention_mask=True,
+                    max_length=self.max_length,
+                    return_tensors='pt'
+                )
+                inputs = {"input_ids": enc["input_ids"].to(self.model.device)}
                 outputs = self.model(**inputs)
+                
+                hidden_states = outputs.hidden_states[-1]              # (B, L, H)
+                mask = enc["attention_mask"].to(hidden_states.device).unsqueeze(-1)  # (B, L, 1)
 
-                hidden_states = outputs.hidden_states[-1]
-
-                embs = hidden_states.mean(dim=1).to(torch.float32)
+                hs = hidden_states.to(torch.float32)
+                embs = (hs * mask).sum(dim=1) / mask.sum(dim=1)
                 embs = embs.cpu().numpy()
-            all_embeddings.append(embs)
+                all_embeddings.append(embs)
 
         return np.vstack(all_embeddings)

@@ -1,27 +1,25 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
-class NucleotideTransformerExtractor:
-    def __init__(self, name_model: str, device: str = 'cpu'):
+class NucleotideTransformerExtractor(BaseEmbeddingExtractor):
+    def __init__(self, name_model: str, device = 'cpu'):
         self.tokenizer = AutoTokenizer.from_pretrained(name_model, trust_remote_code=True)
         self.model = AutoModelForMaskedLM.from_pretrained(name_model, trust_remote_code=True)
         self.model.eval()
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.model.to(self.device)
         self.max_length = self.tokenizer.model_max_length
 
     def extract_embeddings(self, sequences: list[str], batch_size: int = 1) -> np.ndarray:
         
         """
-        Compute mean-pooled embeddings for a list of genomic sequences.
-
         Args:
             sequences: List of nucleotide sequences (strings).
-            batch_size: Number of sequences to process at once (mem-efficient).
+            batch_size: Number of sequences to process at once.
 
         Returns:
             np.ndarray of shape (len(sequences), hidden_size)

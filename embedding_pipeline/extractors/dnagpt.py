@@ -4,13 +4,13 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from pathlib import Path
-
+from .base import BaseEmbeddingExtractor
 from torch.nn.utils.rnn import pad_sequence
 
 from utility_modules.DNAGPT_project.dna_gpt.model import DNAGPT
 from utility_modules.DNAGPT_project.dna_gpt.tokenizer import KmerTokenizer
 
-class DNAGPTExtractor:
+class DNAGPTExtractor(BaseEmbeddingExtractor):
     @staticmethod
     def get_model_and_tokenizer(model_name: str):
         """
@@ -33,8 +33,8 @@ class DNAGPTExtractor:
         model.to(device=device, dtype=dtype).eval()
         return model, tokenizer
 
-    def __init__(self, name_model: str, device: str='cpu'):
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, name_model: str, device ='cpu'):
+        self.device = device
 
         self.model_name = Path(name_model).stem
         self.weights = name_model
@@ -44,6 +44,7 @@ class DNAGPTExtractor:
         model, tokenizer = self.get_model_and_tokenizer(self.model_name)
 
         self.model, self.tokenizer = self.load_weights(model, tokenizer, self.weights, self.device, self.dtype)
+        print("self.model.max_len", self.model.max_len)
         self.max_len = getattr(self.model, 'max_len', None)
 
     def extract_embeddings(self, seqs: List[str], batch_size: int = 1) -> np.ndarray:
@@ -62,7 +63,7 @@ class DNAGPTExtractor:
                 batch = seqs[i:i+batch_size]
 
                 
-                toks = [self.tokenizer.encode(s, max_len=min(self.max_len, getattr(self.model, "max_len", self.max_len)),
+                toks = [self.tokenizer.encode(f"<R>{s}", max_len=self.max_len,
                                       device=self.device)
                 for s in batch]
 

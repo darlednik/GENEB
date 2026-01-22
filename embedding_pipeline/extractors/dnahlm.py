@@ -1,13 +1,13 @@
 from typing import List
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM
-
+from .base import BaseEmbeddingExtractor
 import numpy as np
 import torch
 
-class DNAHLMExtractor:
+class DNAHLMExtractor(BaseEmbeddingExtractor):
     def __init__(self, name_model: str, device: str = 'cpu'):
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device
         
         self.tokenizer = AutoTokenizer.from_pretrained(name_model, 
                                                        trust_remote_code=True)
@@ -20,17 +20,17 @@ class DNAHLMExtractor:
             )
             .to(self.device)
         )
+
+        self.max_length = int(self.model.config.n_positions)
         self.model.eval()
 
         
 
     def extract_embeddings(self, seqs: List[str], batch_size: int = 1) -> np.ndarray:
         """
-        Compute mean-pooled embeddings for a list of genomic sequences.
-
         Args:
-            seqs (List[str]): List of nucleotide sequences.
-            batch_size (int, optional): Number of sequences to process at once. Defaults to 1.
+            seqs: list of str sequences
+            batch_size: number of sequences per batch
 
         Returns:
             np.ndarray of shape (len(sequences), hidden_size)
@@ -44,8 +44,8 @@ class DNAHLMExtractor:
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
-                    max_length=256
-                   # add_special_tokens=True
+                    max_length=self.max_length,
+                    add_special_tokens=False
                 )
                 input_ids = enc.input_ids.to(self.device)
                 attention_mask = enc.attention_mask.to(self.device)

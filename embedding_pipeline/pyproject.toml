@@ -6,8 +6,10 @@ description = "Run testing models"
 
 dependencies = [
   "numpy",
+  "six>=1.16.0",
+  "pandas>=2.0.0",
   #"torch>=1.13",
-  "scikit-learn>=1.1",
+  "scikit-learn>=1.1,<1.8.0",
   "datasets>=2.9",
   "tqdm>=4.64",
   "enformer-pytorch>=0.5",
@@ -16,15 +18,15 @@ dependencies = [
   "flash-attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.7cxx11abiFALSE-cp311-cp311-linux_x86_64.whl",
   "mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.2.5/mamba_ssm-2.2.5+cu12torch2.7cxx11abiFALSE-cp311-cp311-linux_x86_64.whl",
   "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.5.2/causal_conv1d-1.5.2+cu12torch2.7cxx11abiFALSE-cp311-cp311-linux_x86_64.whl",
-
-  # В Dockerfile они ставились отдельно
+  #"bmfm-targets @ git+https://github.com/BiomedSciAI/biomed-multi-omic.git@80faa3a832c909da8c82fac45a049349c1960c47",
+  "biofm-eval",
   "einops",
   "optree",
   "regex",
   "omegaconf",
   "torch==2.7.1",
- #"ai2-olmo",
- # "triton",
+  #"ai2-olmo",
+  # "triton",
   "wandb",
   "hf_xet",
   "ai2-olmo>=0.6.0",
@@ -32,10 +34,22 @@ dependencies = [
   "pytabix",
   "pyBigWig",
   "joblib",
-  "imblearn"
+  "orbax",
+  "flax",
   #"selene-sdk"
   #"mamba-ssm",
   #"causal-conv1d>=1.4.0"
+  "imblearn",
+  "six>=1.17.0",
+]
+
+[project.optional-dependencies]
+nucleotide-gpt = [
+    "jax>=0.4.28",
+    "jaxlib>=0.4.28",
+    "flax>=0.8.0",
+    "optax>=0.2.2",
+    "orbax-checkpoint>=0.6.4",
 ]
 
 [project.scripts]
@@ -49,20 +63,23 @@ build-backend = "setuptools.build_meta"
 packages   = ["pipeline", "extractors", "data_dir"]
 py-modules = ["main"]
 
-
 #[tool.uv.dependency-groups]
 #dev = [
 #  "jupyterlab",
 #  "ipykernel",
 #]
 
+# remove for bmfm
 [[tool.uv.index]]
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
+#
 
 [tool.uv.sources]
+# remove for bmfm
 torch = { index = "pytorch-cu126" }
+biofm-eval = { path = "./utility_modules/biofm/biofm-eval" }
 
 [tool.uv]
 build-constraint-dependencies = ["setuptools>=60", "wheel", "ninja", "packaging"]
