@@ -1,35 +1,47 @@
-# DNASurvey
-DNA Survey Research
+# GENEB — Genomic Embedding Benchmark (`dev`)
 
-### Synchronize dependences and create enviroment
+This branch hosts **model-specific development extractors and the local evaluation pipeline** for
+[GENEB](https://arxiv.org/abs/2606.04525), a multi-task benchmark for DNA sequence encoders.
+The canonical benchmark definition, submission schema, leaderboard, and reference harness are
+maintained on [`main`](https://github.com/darlednik/geneb/tree/main).
+
+GENEB comprises **100 classification tasks** across **13 functional categories**. Models are
+evaluated using a **linear probe on frozen sequence embeddings** under three regimes — full-data,
+10-shot, and 1-shot — with MCC, accuracy, and macro-F1 reported as evaluation metrics.
+
+* **Paper:** https://arxiv.org/abs/2606.04525
+* **Benchmark (`main`):** https://github.com/darlednik/geneb
+* **Leaderboard:** https://huggingface.co/spaces/darlednik/geneb-leaderboard
+* **Task data:** https://huggingface.co/datasets/darlednik/geneb-tasks
+
+On `dev`, model-specific extractors under `embedding_pipeline/extractors/` are maintained prior
+to integration into the public reference harness on `main`. For the current minimal reference set,
+see `harness/extractors/` and
+[`CONTRIBUTING.md`](https://github.com/darlednik/geneb/blob/main/CONTRIBUTING.md) on `main`.
+
+---
+
+## Environment
+
+Install dependencies with [uv](https://docs.astral.sh/uv/) from the pipeline directory:
 
 ```bash
+cd embedding_pipeline
 uv sync
 ```
 
-### Options
-## Command Line Arguments
+---
 
-### Required Arguments
-- `--data_dir` – Path to directory containing .csv files or benchmark folders with training/test data
-- `--extractor` – Name of the extractor class to use for embedding generation
-- `--name_model` – Path or name of the pre-trained model to load
+## Task data
 
-### Optional Arguments
-- `-o, --output_dir` – Directory to save results (default: `results`)
-- `--module` – Optional module name for the extractor. Defaults to lowercase of class name
-- `-d, --device` – Computation device: `cpu` or `cuda` (default: `cuda`)
-- `-b, --batch_size` – Batch size for embedding extraction (default: `4`)
-- `--n_jobs` – Number of parallel jobs for logistic regression training (default: `32`)
-- `--format_reader` – Input data format: `csv` or `dnalongbench` (optional)
-- `--type_train` – Training strategy:
-  - `all` – Train on full dataset AND few-shot subsets (1 & 10 examples)
-  - `only_few_shot` – Train ONLY on few-shot subsets (1 & 10 examples)
-  - `only_full` – Train ONLY on full dataset (default: `all`)
+GENEB tasks are distributed as one CSV file per task, with columns `text`, `label`, and `split`
+(`train` or `test`). Place the task files in a local directory, for example `GENEB_data/`.
 
-### Example run
+Download the dataset revision pinned in
+[`benchmark/benchmark_spec.json`](https://github.com/darlednik/geneb/blob/main/benchmark/benchmark_spec.json)
+using the synchronization utility from `main`:
 
 ```bash
-uv run main.py --data_dir ./data_dir/ --output_dir ./results --extractor GenomeOceanExtractor --module genomeocean --device cuda:0 --batch_size 16 --name_model DOEJGI/GenomeOcean-500M --type_train all --format_reader csv --n_jobs 10
-
+git checkout main -- tools/sync_geneb_dataset.py benchmark/benchmark_spec.json
+python3 tools/sync_geneb_dataset.py download --local_dir ./GENEB_data
 ```
