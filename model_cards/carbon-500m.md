@@ -44,12 +44,14 @@ then Factorised Nucleotide Supervision to 600B. bfloat16, AdamW, no long-context
   agrees to 3.8e-06.
 - **Evaluation environment:** Intel Xeon Platinum 8559C, 16 cores; NVIDIA RTX PRO 6000
   Blackwell Server Edition. Python 3.10.12, scikit-learn 1.7.2, numpy 2.2.6, scipy 1.15.3
-  (OpenBLAS 0.3.28/0.3.29, 16 threads), torch 2.11.0+cu128, transformers 5.20.2. Model
+  (OpenBLAS 0.3.28/0.3.29), torch 2.11.0+cu128, transformers 5.20.2. Model
   revision `2ac078d4dd6c79b5c1255b24b5c64a1982d97c74`. Harness run with the spec settings
-  unchanged (`n_jobs=32`, default BLAS threading).
+  unchanged (`n_jobs=32`). With `n_jobs=32` the probe fit runs in a loky worker capped at
+  `16 // 32` -> 1 BLAS thread, so these numbers were produced single-threaded.
 - **Reproducibility caveat:** every `full`-regime probe fit stopped at `max_iter=1000`
-  without converging, so exact scores depend on the BLAS thread count of the host. On
-  H3K14ac, MCC varied by 0.0042 between 1 and 16 threads. Reproducing these numbers
-  exactly requires the same thread count.
+  without converging, so scores are sensitive to BLAS summation order (darlednik/GENEB#3).
+  Under the spec's `n_jobs=32`, any host with fewer than 64 cores also runs the probe on
+  1 thread and should reproduce these numbers with OpenBLAS; on H3K14ac, 8 or 16 threads
+  instead moved MCC by up to 0.0042.
 - **Harness version:** GENEB-0.1.0
 - **Submitted by:** J-ratio (https://github.com/J-ratio)
