@@ -18,6 +18,13 @@ TAG_TOKENS = 2  # <dna> ... </dna>
 _IUPAC_AMBIGUOUS = frozenset("RYSWKMBDHVN")
 _ALLOWED_BASES = frozenset("ACGT") | _IUPAC_AMBIGUOUS | {"U"}
 _PROBE_SEQUENCE = "ACGT" * 30  # 120 nt -> 20 six-mers + 2 tags
+# Hugging Face commits the submitted scores were computed with. Model and tokenizer
+# are both loaded with trust_remote_code, so both are pinned.
+REVISIONS = {
+    "HuggingFaceBio/Carbon-500M": "2ac078d4dd6c79b5c1255b24b5c64a1982d97c74",
+    "HuggingFaceBio/Carbon-3B": "e1b2369c087f39769a2107704b887a1c8ae1f3b8",
+    "HuggingFaceBio/Carbon-8B": "2361b060209e1ccba08691e1dc31a3b8eb9e6816",
+}
 
 
 def _normalize_sequence(sequence: str) -> str:
@@ -133,7 +140,8 @@ class CarbonExtractor(BaseEmbeddingExtractor):
         Parameters
         ----------
         name_model
-            Hugging Face repository id or local checkpoint directory.
+            Hugging Face repository id or local checkpoint directory. Known
+            repository ids are loaded at the commit listed in ``REVISIONS``.
         device
             PyTorch device, for example ``cpu`` or ``cuda``.
 
@@ -148,8 +156,10 @@ class CarbonExtractor(BaseEmbeddingExtractor):
         if self.device.type == "cuda" and not torch.cuda.is_available():
             raise RuntimeError("CUDA was requested but is not available")
 
+        revision = REVISIONS.get(name_model)
         self.tokenizer = AutoTokenizer.from_pretrained(
             name_model,
+            revision=revision,
             trust_remote_code=True,
         )
         if int(getattr(self.tokenizer, "k", 0)) != KMER_SIZE:
@@ -158,7 +168,10 @@ class CarbonExtractor(BaseEmbeddingExtractor):
                 f"{getattr(self.tokenizer, 'k', None)}"
             )
 
-        load_kwargs: dict[str, object] = {"trust_remote_code": True}
+        load_kwargs: dict[str, object] = {
+            "revision": revision,
+            "trust_remote_code": True,
+        }
         if self.device.type == "cuda":
             load_kwargs["attn_implementation"] = "sdpa"
         self.model = AutoModel.from_pretrained(name_model, **load_kwargs)
