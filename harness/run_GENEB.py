@@ -21,6 +21,7 @@ import argparse, importlib, json, os, sys, csv
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef
+from threadpoolctl import threadpool_limits
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -35,6 +36,9 @@ MAX_ITER = LOGREG["max_iter"]
 LOGREG_KW = {"max_iter": MAX_ITER}
 if "n_jobs" in LOGREG:
     LOGREG_KW["n_jobs"] = LOGREG["n_jobs"]
+# The probe usually stops at max_iter, so its result depends on BLAS summation order.
+# Pinning the thread count keeps scores independent of the host's core count.
+BLAS_THREADS = LOGREG.get("blas_threads")  # None leaves BLAS threading unchanged
 KSHOTS   = SPEC["protocol"]["few_shot_k"]       # [1,10]
 K_TO_REG = {1: "1shot", 10: "10shot"}
 
@@ -68,8 +72,9 @@ def fit_eval(Xtr, ytr, Xte, yte, idx=None):
         else:
             sel = idx(seed)
             xs, ys = Xtr[sel], ytr[sel]
-        clf = LogisticRegression(**LOGREG_KW, random_state=seed).fit(xs, ys)
-        m, a, f = metrics(yte, clf.predict(Xte))
+        with threadpool_limits(limits=BLAS_THREADS, user_api="blas"):
+            clf = LogisticRegression(**LOGREG_KW, random_state=seed).fit(xs, ys)
+            m, a, f = metrics(yte, clf.predict(Xte))
         mc.append(m); ac.append(a); f1.append(f)
     return {"MCC": float(np.mean(mc)), "Acc": float(np.mean(ac)), "F1": float(np.mean(f1))}
 
