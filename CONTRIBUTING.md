@@ -120,7 +120,7 @@ python3 harness/run_GENEB.py \
 
 For each task, the harness (i) embeds train and test sequences, (ii) fits a logistic
 regression probe with the settings in `benchmark_spec.json` (seeds
-`[13, 17, 42, 123, 997]`, `max_iter=1000`, `n_jobs` as specified), and (iii) reports
+`[13, 17, 42, 123, 997]`, `max_iter=1000`, threads pinned to `probe_threads`), and (iii) reports
 mean MCC, accuracy, and macro-F1 over seeds for regimes `full`, `1shot`, and `10shot`.
 Output is written to `submissions/<model_id>.json`.
 
