@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "GENEB \u2014 Genomic Embedding Benchmark",
-  "harness_version": "GENEB-0.1.0",
+  "harness_version": "GENEB-0.1.1",
   "regimes": [
     "full",
     "10shot",
@@ -17,7 +17,7 @@
     "probe": "logistic_regression",
     "logreg": {
       "max_iter": 1000,
-      "blas_threads": 1
+      "probe_threads": 1
     },
     "seeds": [
       13,

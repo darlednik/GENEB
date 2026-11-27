@@ -22,6 +22,6 @@ Suggested sections:
 ## Disclosure
 - **Zero-shot relative to benchmark tasks:** 
 - **Known train/test overlap with benchmark data:** 
-- **Harness version:** GENEB-0.1.0
+- **Harness version:** GENEB-0.1.1
 - **Submitted by:**
 ```

@@ -37,8 +37,8 @@ LOGREG_KW = {"max_iter": MAX_ITER}
 if "n_jobs" in LOGREG:
     LOGREG_KW["n_jobs"] = LOGREG["n_jobs"]
 # The probe usually stops at max_iter, so its result depends on BLAS summation order.
-# Pinning the thread count keeps scores independent of the host's core count.
-BLAS_THREADS = LOGREG.get("blas_threads")  # None leaves BLAS threading unchanged
+# Pinning the thread count (BLAS and OpenMP) keeps scores independent of the host's core count.
+PROBE_THREADS = LOGREG.get("probe_threads")  # None leaves threading unchanged
 KSHOTS   = SPEC["protocol"]["few_shot_k"]       # [1,10]
 K_TO_REG = {1: "1shot", 10: "10shot"}
 
@@ -72,7 +72,7 @@ def fit_eval(Xtr, ytr, Xte, yte, idx=None):
         else:
             sel = idx(seed)
             xs, ys = Xtr[sel], ytr[sel]
-        with threadpool_limits(limits=BLAS_THREADS, user_api="blas"):
+        with threadpool_limits(limits=PROBE_THREADS):
             clf = LogisticRegression(**LOGREG_KW, random_state=seed).fit(xs, ys)
             m, a, f = metrics(yte, clf.predict(Xte))
         mc.append(m); ac.append(a); f1.append(f)
